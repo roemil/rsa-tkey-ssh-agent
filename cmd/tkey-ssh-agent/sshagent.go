@@ -118,8 +118,10 @@ func (s *SSHAgent) Sign(key ssh.PublicKey, data []byte) (*ssh.Signature, error) 
 	return signature, nil
 }
 
-func (s *SSHAgent) SignWithFlags(key ssh.PublicKey, data []byte, _ agent.SignatureFlags) (*ssh.Signature, error) {
+func (s *SSHAgent) SignWithFlags(key ssh.PublicKey, data []byte, flags agent.SignatureFlags) (*ssh.Signature, error) {
 	// we only do ed25519, so no need to care about flags
+	le.Println("flags: ")
+	le.Println(flags)
 	return s.Sign(key, data)
 }
 

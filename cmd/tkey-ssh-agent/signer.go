@@ -5,13 +5,14 @@ package main
 
 import (
 	"crypto"
-	"crypto/ed25519"
+	"crypto/rsa"
 	"crypto/sha512"
 	_ "embed"
 	"encoding/hex"
 	"errors"
 	"fmt"
 	"io"
+	"math/big"
 	"os"
 	"os/signal"
 	"sync"
@@ -172,6 +173,8 @@ func (s *Signer) isWantedApp() bool {
 		}
 		return false
 	}
+	fmt.Fprintf(os.Stdout, "GetAppNameVersion: %s\n", nameVer.Name0)
+	fmt.Fprintf(os.Stdout, "GetAppNameVersion: %s\n", nameVer.Name1)
 	// not caring about nameVer.Version
 	return nameVer.Name0 == wantAppName0 &&
 		nameVer.Name1 == wantAppName1
@@ -220,8 +223,17 @@ func (s *Signer) printAuthorizedKey() {
 		le.Printf("GetPubkey failed: %s\n", err)
 		return
 	}
+	fmt.Fprintf(os.Stdout, "len: %d\n", len(pub))
+	str := hex.EncodeToString(pub)
+	fmt.Fprintf(os.Stdout, "data: %s\n", str)
 
-	sshPub, err := ssh.NewPublicKey(ed25519.PublicKey(pub))
+	var pubKey = rsa.PublicKey{}
+	pubKey.N = &big.Int{}
+	pubKey.N.SetBytes(pub)
+	pubKey.E = 65537
+	sshPub, err := ssh.NewPublicKey(&pubKey)
+	le.Println("Type:")
+	le.Println(sshPub.Type())
 	if err != nil {
 		le.Printf("NewPublicKey failed: %s\n", err)
 		return
@@ -269,7 +281,6 @@ func (s *Signer) closeNow() {
 }
 
 // implementing crypto.Signer below
-
 func (s *Signer) Public() crypto.PublicKey {
 	if !s.connect() {
 		return nil
@@ -281,7 +292,12 @@ func (s *Signer) Public() crypto.PublicKey {
 		le.Printf("GetPubkey failed: %s\n", err)
 		return nil
 	}
-	return ed25519.PublicKey(pub)
+	var pubKey = rsa.PublicKey{}
+	pubKey.N = &big.Int{}
+	pubKey.N.SetBytes(pub)
+	pubKey.E = 65537
+
+	return &pubKey
 }
 
 func (s *Signer) Sign(_ io.Reader, message []byte, opts crypto.SignerOpts) ([]byte, error) {
@@ -292,9 +308,16 @@ func (s *Signer) Sign(_ io.Reader, message []byte, opts crypto.SignerOpts) ([]by
 
 	// The Ed25519 signature must be made over unhashed message. See:
 	// https://cs.opensource.google/go/go/+/refs/tags/go1.18.4:src/crypto/ed25519/ed25519.go;l=80
-	if opts.HashFunc() != crypto.Hash(0) {
-		return nil, errors.New("message must not be hashed")
-	}
+	// if opts.HashFunc() != crypto.Hash(0) {
+	// 	return nil, errors.New("message must not be hashed")
+	// }
+	// if _, ok := opts.(*PSSOptions); ok {
+	// 	le.Println("Got PSS")
+	// }
+	le.Println("Hash:")
+	le.Println(opts.HashFunc().String())
+	le.Println("Len:")
+	le.Println(len(message))
 
 	signature, err := s.tkSigner.Sign(message)
 	if err != nil {
