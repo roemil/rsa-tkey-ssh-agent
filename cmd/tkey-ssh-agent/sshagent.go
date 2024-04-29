@@ -22,11 +22,11 @@ import (
 var signerAppNoTouch string
 
 type SSHAgent struct {
-	signer      *MultiAlgorithmSigner
+	signer      *AlgorithmSigner
 	operationMu sync.Mutex // only handling 1 agent op at a time
 }
 
-func NewSSHAgent(signer *MultiAlgorithmSigner) *SSHAgent {
+func NewSSHAgent(signer *AlgorithmSigner) *SSHAgent {
 	return &SSHAgent{signer: signer}
 }
 

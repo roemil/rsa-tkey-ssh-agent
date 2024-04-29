@@ -150,7 +150,7 @@ will flash green when the stick must be touched to complete a signature.`, progn
 		prevExitFunc(code)
 	}
 
-	signer := NewMultiAlgorithmSinger(devPath, speed, enterUSS, fileUSS, pinentry, exit)
+	signer := NewAlgorithmSinger(devPath, speed, enterUSS, fileUSS, pinentry, exit)
 
 	if showPubkeyOnly {
 		if !signer.connect() {
