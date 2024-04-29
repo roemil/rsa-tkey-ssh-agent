@@ -15,6 +15,7 @@ import (
 	"math/big"
 	"os"
 	"os/signal"
+	"runtime/debug"
 	"sync"
 	"syscall"
 	"time"
@@ -59,6 +60,26 @@ type Signer struct {
 	disconnectTimer *time.Timer
 }
 
+type AlgorithmSigner struct {
+	signer Signer
+}
+
+type MultiAlgorithmSigner struct {
+	signer AlgorithmSigner
+}
+
+func NewAlgorithmSinger(devPathArg string, speedArg int, enterUSS bool, fileUSS string, pinentry string, exitFunc func(int)) *AlgorithmSigner {
+	var signer AlgorithmSigner
+	signer.signer = *NewSigner(devPathArg, speedArg, enterUSS, fileUSS, pinentry, exitFunc)
+	return &signer
+}
+
+func NewMultiAlgorithmSinger(devPathArg string, speedArg int, enterUSS bool, fileUSS string, pinentry string, exitFunc func(int)) *MultiAlgorithmSigner {
+	var signer MultiAlgorithmSigner
+	signer.signer = *NewAlgorithmSinger(devPathArg, speedArg, enterUSS, fileUSS, pinentry, exitFunc)
+	return &signer
+}
+
 func NewSigner(devPathArg string, speedArg int, enterUSS bool, fileUSS string, pinentry string, exitFunc func(int)) *Signer {
 	var signer Signer
 
@@ -87,6 +108,14 @@ func NewSigner(devPathArg string, speedArg int, enterUSS bool, fileUSS string, p
 	}, os.Interrupt, syscall.SIGTERM)
 
 	return &signer
+}
+
+func (s *MultiAlgorithmSigner) connect() bool {
+	return s.signer.connect()
+}
+
+func (s *AlgorithmSigner) connect() bool {
+	return s.signer.connect()
 }
 
 func (s *Signer) connect() bool {
@@ -211,6 +240,14 @@ func (s *Signer) loadApp() error {
 	return nil
 }
 
+func (s *MultiAlgorithmSigner) printAuthorizedKey() {
+	s.signer.printAuthorizedKey()
+}
+
+func (s *AlgorithmSigner) printAuthorizedKey() {
+	s.signer.printAuthorizedKey()
+}
+
 func (s *Signer) printAuthorizedKey() {
 	if !s.connect() {
 		le.Printf("Connect failed")
@@ -232,8 +269,7 @@ func (s *Signer) printAuthorizedKey() {
 	pubKey.N.SetBytes(pub)
 	pubKey.E = 65537
 	sshPub, err := ssh.NewPublicKey(&pubKey)
-	le.Println("Type:")
-	le.Println(sshPub.Type())
+
 	if err != nil {
 		le.Printf("NewPublicKey failed: %s\n", err)
 		return
@@ -241,6 +277,10 @@ func (s *Signer) printAuthorizedKey() {
 
 	le.Printf("Your SSH public key (on stdout):\n")
 	fmt.Fprintf(os.Stdout, "%s", ssh.MarshalAuthorizedKey(sshPub))
+}
+
+func (s *AlgorithmSigner) disconnect() {
+	s.signer.disconnect()
 }
 
 func (s *Signer) disconnect() {
@@ -271,6 +311,14 @@ func (s *Signer) disconnect() {
 	})
 }
 
+func (s *MultiAlgorithmSigner) closeNow() {
+	s.signer.closeNow()
+}
+
+func (s *AlgorithmSigner) closeNow() {
+	s.signer.closeNow()
+}
+
 func (s *Signer) closeNow() {
 	if s.tkSigner == nil {
 		return
@@ -278,6 +326,24 @@ func (s *Signer) closeNow() {
 	if err := s.tkSigner.Close(); err != nil {
 		le.Printf("Close failed: %s\n", err)
 	}
+}
+func (s *MultiAlgorithmSigner) PublicKey() ssh.PublicKey {
+	return s.signer.PublicKey()
+}
+func (s *AlgorithmSigner) PublicKey() ssh.PublicKey {
+	key, err := ssh.NewPublicKey(s.signer.Public())
+	if err != nil {
+		panic("Cannot create public key")
+	}
+	return key
+}
+
+func (s *MultiAlgorithmSigner) Public() crypto.PublicKey {
+	return s.signer.Public()
+}
+
+func (s *AlgorithmSigner) Public() crypto.PublicKey {
+	return s.signer.Public()
 }
 
 // implementing crypto.Signer below
@@ -293,37 +359,62 @@ func (s *Signer) Public() crypto.PublicKey {
 		return nil
 	}
 	var pubKey = rsa.PublicKey{}
-	pubKey.N = &big.Int{}
+	pubKey.N = big.NewInt(0)
 	pubKey.N.SetBytes(pub)
 	pubKey.E = 65537
 
 	return &pubKey
 }
 
-func (s *Signer) Sign(_ io.Reader, message []byte, opts crypto.SignerOpts) ([]byte, error) {
+func (s *MultiAlgorithmSigner) Sign(reader io.Reader, message []byte) (*ssh.Signature, error) {
+	return s.signer.Sign(reader, message)
+}
+
+func SwapEndianess(src []byte) []byte {
+	output := make([]byte, len(src))
+	for i := 0; i < len(src); i += 4 {
+		output[i] = src[i+3]
+		output[i+1] = src[i+2]
+		output[i+2] = src[i+1]
+		output[i+3] = src[i]
+	}
+	return output
+}
+
+func (s *AlgorithmSigner) Sign(reader io.Reader, message []byte) (*ssh.Signature, error) {
+	debug.PrintStack()
 	if !s.connect() {
 		return nil, fmt.Errorf("Connect failed")
 	}
 	defer s.disconnect()
 
-	// The Ed25519 signature must be made over unhashed message. See:
-	// https://cs.opensource.google/go/go/+/refs/tags/go1.18.4:src/crypto/ed25519/ed25519.go;l=80
-	// if opts.HashFunc() != crypto.Hash(0) {
-	// 	return nil, errors.New("message must not be hashed")
-	// }
-	// if _, ok := opts.(*PSSOptions); ok {
-	// 	le.Println("Got PSS")
-	// }
-	le.Println("Hash:")
-	le.Println(opts.HashFunc().String())
-	le.Println("Len:")
-	le.Println(len(message))
-
-	signature, err := s.tkSigner.Sign(message)
+	signature, err := s.signer.tkSigner.Sign(message)
 	if err != nil {
 		return nil, fmt.Errorf("Sign: %w", err)
 	}
-	return signature, nil
+	var sshSig = ssh.Signature{}
+	prefix := "rsa-sha2-512"
+	sshSig.Format = prefix
+	sshSig.Blob = signature
+	le.Println(len(sshSig.Blob))
+	return &sshSig, nil
+}
+
+func (s *MultiAlgorithmSigner) Algorithms() []string {
+	var algos = make([]string, 1)
+	algos[0] = "rsa-sha2-512"
+	return algos
+}
+
+func (s *MultiAlgorithmSigner) SignWithAlgorithm(rand io.Reader, data []byte, algorithm string) (*ssh.Signature, error) {
+	return s.signer.SignWithAlgorithm(rand, data, algorithm)
+}
+
+func (s *AlgorithmSigner) SignWithAlgorithm(rand io.Reader, data []byte, algorithm string) (*ssh.Signature, error) {
+	if algorithm != "rsa-sha2-512" {
+		return nil, fmt.Errorf("unsupported algo: %s", algorithm)
+	}
+	return s.Sign(rand, data)
 }
 
 func handleSignals(action func(), sig ...os.Signal) {

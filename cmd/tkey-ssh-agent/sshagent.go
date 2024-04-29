@@ -22,11 +22,11 @@ import (
 var signerAppNoTouch string
 
 type SSHAgent struct {
-	signer      *Signer
+	signer      *MultiAlgorithmSigner
 	operationMu sync.Mutex // only handling 1 agent op at a time
 }
 
-func NewSSHAgent(signer *Signer) *SSHAgent {
+func NewSSHAgent(signer *MultiAlgorithmSigner) *SSHAgent {
 	return &SSHAgent{signer: signer}
 }
 
@@ -92,7 +92,12 @@ func (s *SSHAgent) Sign(key ssh.PublicKey, data []byte) (*ssh.Signature, error) 
 	defer s.operationMu.Unlock()
 
 	// This does s.signer.Public()
-	sshSigner, err := ssh.NewSignerFromSigner(s.signer)
+	//sshSigner, err := ssh.NewSignerFromSigner(s.signer)
+	supportedAlgorithms := make([]string, 1)
+	supportedAlgorithms[0] = "rsa-sha2-512"
+	sshSigner, err := ssh.NewSignerWithAlgorithms(s.signer, supportedAlgorithms)
+	print("Algos supported:")
+	println(sshSigner.Algorithms()[0])
 	if err != nil {
 		return nil, fmt.Errorf("NewSignerFromSigner: %w", err)
 	}
@@ -111,6 +116,7 @@ func (s *SSHAgent) Sign(key ssh.PublicKey, data []byte) (*ssh.Signature, error) 
 	} else {
 		le.Printf("Sign: WARNING! This tkey-ssh-agent and signer app is built with the touch requirement removed\n")
 	}
+
 	signature, err := sshSigner.Sign(rand.Reader, data)
 	if err != nil {
 		return nil, fmt.Errorf("Signer.Sign: %w", err)
