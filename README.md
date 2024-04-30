@@ -14,3 +14,10 @@ For more information, see https://tillitis.se/
 ## Limitations
 * The hardware is unfortunately not optimized for division which the RSA algorithm use a lot, so key generation is slow.
 * A new keypair is generated each time the Tkey is power cycled, meaning you need to upload the public key to the server each time a new pair is generated. This is a huge drawback in terms of usability but unfortuntanly the RSA algorithm is random and there is no persistant storage in Tkey. It works fast with the QEMU emulator though: https://github.com/tillitis/tkey-devtools
+
+## License
+This project is based on Mbed-TLS (https://github.com/Mbed-TLS/mbedtls) and https://github.com/tillitis/tkey-ssh-agent. 
+This repo is licensed to "GNU General Public License v2.0 only". See [LICENSE](https://github.com/roemil/rsa-tkey-ssh-agent/blob/main/LICENSE) for full license text.
+
+### TODO
+Fix the build script :)
