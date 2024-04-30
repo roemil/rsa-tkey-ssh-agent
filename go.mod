@@ -2,18 +2,14 @@ module github.com/tillitis/tillitis-key1-apps
 
 go 1.19
 
-replace github.com/tillitis/tkeysign => ../tkeysign
-
-replace github.com/tillitis/tkeyclient => ../tkeyclient
-
 require (
 	github.com/Microsoft/go-winio v0.6.1
 	github.com/apenwarr/fixconsole v0.0.0-20191012055117-5a9f6489cc29
 	github.com/getlantern/systray v1.2.1
+	github.com/roemil/tkeysign v0.0.2
 	github.com/spf13/pflag v1.0.5
 	github.com/tawesoft/golib/v2 v2.9.0
 	github.com/tillitis/tkeyclient v1.0.0
-	github.com/tillitis/tkeysign v0.0.0-00010101000000-000000000000
 	github.com/tillitis/tkeyutil v0.0.7
 	github.com/twpayne/go-pinentry-minimal v0.0.0-20220113210447-2a5dc4396c2a
 	golang.org/x/crypto v0.22.0

@@ -38,6 +38,8 @@ github.com/oxtoacart/bpool v0.0.0-20190530202638-03653db5a59c h1:rp5dCmg/yLR3mgF
 github.com/oxtoacart/bpool v0.0.0-20190530202638-03653db5a59c/go.mod h1:X07ZCGwUbLaax7L0S3Tw4hpejzu63ZrrQiUe6W0hcy0=
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
+github.com/roemil/tkeysign v0.0.2 h1:SVWB/cuO7zjSvZkYB4txB/NiMNLJfynfoWNZoFBLg3Q=
+github.com/roemil/tkeysign v0.0.2/go.mod h1:AtKJi+h7Mmy48/mN605E4JMWFGT+0D7aPwa8yxyk1iQ=
 github.com/spf13/pflag v1.0.5 h1:iy+VFUOCP1a+8yFto/drg2CJ5u0yRoB7fZw3DKv/JXA=
 github.com/spf13/pflag v1.0.5/go.mod h1:McXfInJRrz4CZXVZOBLb0bTZqETkiAhM9Iw0y3An2Bg=
 github.com/stretchr/objx v0.1.0/go.mod h1:HFkY916IF+rwdDfMAkV7OtwuqBVzrE8GR6GFx+wExME=
@@ -47,6 +49,8 @@ github.com/tadvi/systray v0.0.0-20190226123456-11a2b8fa57af h1:6yITBqGTE2lEeTPG0
 github.com/tadvi/systray v0.0.0-20190226123456-11a2b8fa57af/go.mod h1:4F09kP5F+am0jAwlQLddpoMDM+iewkxxt6nxUQ5nq5o=
 github.com/tawesoft/golib/v2 v2.9.0 h1:R84RNHs+A8UYuRVlLKVpb3Xzp1bvyP2qgAAZQ/ZRXfA=
 github.com/tawesoft/golib/v2 v2.9.0/go.mod h1:jGw0nDuOLpji2TW5QfSQLcWnZ4WtS4TizzRuXu3hZ/Y=
+github.com/tillitis/tkeyclient v1.0.0 h1:Ox9mEwxon9SRUconYZXrcqrm0YxpMCblMZLPXzPtKro=
+github.com/tillitis/tkeyclient v1.0.0/go.mod h1:dg2fyhB6szX7n1QIf19WcWtl/ueBPQYVlTCjY/kG5pM=
 github.com/tillitis/tkeyutil v0.0.7 h1:+QE4hvthUextFDiLt8Ssxffyn0FPNwDcloahS0sPSQU=
 github.com/tillitis/tkeyutil v0.0.7/go.mod h1:KI+trqptqoe+7hQaryBxgRENZPb24NrPlLexIFd/dFU=
 github.com/twpayne/go-pinentry-minimal v0.0.0-20220113210447-2a5dc4396c2a h1:a1bRrtgkiv0tytmDVXU5Dqse/WOTws7JvsY2WxPMZ6M=
