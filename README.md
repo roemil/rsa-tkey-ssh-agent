@@ -1,11 +1,12 @@
 # RSA SSH AGENT
-This is a proof of concept to use the Tkey SSH Agent with RSA keys. It uses a specific RSA signer, with 2048 bits key and SHA512. It is based on the SSH agent written by Tilltis.
+This is a proof of concept to use the Tkey SSH Agent with RSA keys. It uses a specific RSA signer, with 2048 bits key and SHA512. It is based on the SSH agent written by Tilltis: https://github.com/tillitis/tkey-ssh-agent
 
 For more information, see https://tillitis.se/
 
 ## Usage
+* Make sure you have built the RSA signer: https://github.com/roemil?tab=repositories
 * Build the SSH agent: make clean && make
-* start the agent: ./rsa-tkey-ssh-agent --port /path/to/device -a /path/to/agent.sock
+* start the agent: ./tkey-ssh-agent --port /path/to/device -a /path/to/agent.sock
 * In another terminal, generate a new RSA keypair: ssh-add -L
 * Add the public key (shown in the terminal) to the server you want to authenticate against
 * Touch the tkey when prompted (ie when you are signing a message for authentication)
