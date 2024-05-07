@@ -35,7 +35,7 @@ func main() {
 		version = readBuildInfo()
 	}
 
-	var agentPath, devPath, fileUSS, pinentry string
+	var agentPath, devPath, fileUSS, pinentry, rsaKeyPath string
 	var speed int
 	var enterUSS, showPubkeyOnly, listPortsOnly, versionOnly, helpOnly bool
 	pflag.CommandLine.SetOutput(os.Stderr)
@@ -65,6 +65,7 @@ func main() {
 		"Pinentry `PROGRAM` for use by --uss. The default is found by looking in your gpg-agent.conf for pinentry-program, or 'pinentry' if not found there. On Windows, an attempt is made to find Gpg4win's pinentry program to use as default.")
 	pflag.BoolVar(&versionOnly, "version", false, "Output version information.")
 	pflag.BoolVar(&helpOnly, "help", false, "Output this help.")
+	pflag.StringVarP(&rsaKeyPath, "rsa-key-path", "", "", "Absolut path to RSA private key file. Must be 2048 bits and hashed with SHA512")
 	pflag.Usage = func() {
 		desc := fmt.Sprintf(`Usage: %[1]s -a|-p|-L [flags...]
 
@@ -120,6 +121,11 @@ will flash green when the stick must be touched to complete a signature.`, progn
 		exit(2)
 	}
 
+	if rsaKeyPath == "" {
+		le.Printf("Path to RSA private key cannot be empty")
+		exit(2)
+	}
+
 	if listPortsOnly {
 		n, err := printPorts()
 		if err != nil {
@@ -150,7 +156,7 @@ will flash green when the stick must be touched to complete a signature.`, progn
 		prevExitFunc(code)
 	}
 
-	signer := NewAlgorithmSinger(devPath, speed, enterUSS, fileUSS, pinentry, exit)
+	signer := NewAlgorithmSinger(devPath, speed, enterUSS, fileUSS, pinentry, rsaKeyPath, exit)
 
 	if showPubkeyOnly {
 		if !signer.connect() {

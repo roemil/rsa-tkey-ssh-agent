@@ -19,8 +19,8 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/roemil/tkeysign"
 	"github.com/tillitis/tkeyclient"
-	"github.com/tillitis/tkeysign"
 	"github.com/tillitis/tkeyutil"
 	"golang.org/x/crypto/ssh"
 )
@@ -54,6 +54,7 @@ type Signer struct {
 	enterUSS        bool
 	fileUSS         string
 	pinentry        string
+	rsaKeyPath      string
 	mu              sync.Mutex
 	connected       bool
 	disconnectTimer *time.Timer
@@ -63,13 +64,13 @@ type AlgorithmSigner struct {
 	signer Signer
 }
 
-func NewAlgorithmSinger(devPathArg string, speedArg int, enterUSS bool, fileUSS string, pinentry string, exitFunc func(int)) *AlgorithmSigner {
+func NewAlgorithmSinger(devPathArg string, speedArg int, enterUSS bool, fileUSS string, pinentry string, rsaKeyPath string, exitFunc func(int)) *AlgorithmSigner {
 	var signer AlgorithmSigner
-	signer.signer = *NewSigner(devPathArg, speedArg, enterUSS, fileUSS, pinentry, exitFunc)
+	signer.signer = *NewSigner(devPathArg, speedArg, enterUSS, fileUSS, pinentry, rsaKeyPath, exitFunc)
 	return &signer
 }
 
-func NewSigner(devPathArg string, speedArg int, enterUSS bool, fileUSS string, pinentry string, exitFunc func(int)) *Signer {
+func NewSigner(devPathArg string, speedArg int, enterUSS bool, fileUSS string, pinentry string, rsaKeyPath string, exitFunc func(int)) *Signer {
 	var signer Signer
 
 	tkeyclient.SilenceLogging()
@@ -78,13 +79,14 @@ func NewSigner(devPathArg string, speedArg int, enterUSS bool, fileUSS string, p
 
 	tkSigner := tkeysign.New(tk)
 	signer = Signer{
-		tk:       tk,
-		tkSigner: &tkSigner,
-		devPath:  devPathArg,
-		speed:    speedArg,
-		enterUSS: enterUSS,
-		fileUSS:  fileUSS,
-		pinentry: pinentry,
+		tk:         tk,
+		tkSigner:   &tkSigner,
+		devPath:    devPathArg,
+		speed:      speedArg,
+		enterUSS:   enterUSS,
+		fileUSS:    fileUSS,
+		pinentry:   pinentry,
+		rsaKeyPath: rsaKeyPath,
 	}
 
 	// Do nothing on HUP, in case old udev rule is still in effect
@@ -158,9 +160,30 @@ func (s *Signer) connect() bool {
 		s.closeNow()
 		return false
 	}
+	f, err := os.Open(s.rsaKeyPath)
+	if err != nil {
+		notify("Failed to open id_rsa.")
+		le.Printf("Failed to open id_rsa. %s\n", err.Error())
+		s.closeNow()
+		return false
+	}
+	key := make([]byte, 1676)
+	n1, err := f.Read(key)
+	if n1 != 1675 {
+		le.Printf("Did not read enough. Read: %d\n", n1)
+		s.closeNow()
+		return false
+	}
+	if err != nil {
+		le.Printf("failed to read: %s\n", err.Error())
+		return false
+	}
+	key[1675] = 0x0 // key must end with 0x0
+
+	s.tkSigner.LoadData(key)
 
 	// We nowadays disconnect from the TKey when idling, so the
-	// signer-app that's running may have been loaded by somebody
+	// signer-app that's running may have been loade by somebody
 	// else. Therefore we can never be sure it has USS according to
 	// the flags that tkey-ssh-agent was started with. So we no longer
 	// say anything about that.
