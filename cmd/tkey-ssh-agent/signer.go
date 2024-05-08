@@ -9,6 +9,7 @@ import (
 	"crypto/sha512"
 	_ "embed"
 	"encoding/hex"
+	"encoding/pem"
 	"errors"
 	"fmt"
 	"io"
@@ -160,27 +161,15 @@ func (s *Signer) connect() bool {
 		s.closeNow()
 		return false
 	}
-	f, err := os.Open(s.rsaKeyPath)
-	if err != nil {
-		notify("Failed to open id_rsa.")
-		le.Printf("Failed to open id_rsa. %s\n", err.Error())
-		s.closeNow()
-		return false
-	}
-	key := make([]byte, 1676)
-	n1, err := f.Read(key)
-	if n1 != 1675 {
-		le.Printf("Did not read enough. Read: %d\n", n1)
-		s.closeNow()
-		return false
-	}
-	if err != nil {
-		le.Printf("failed to read: %s\n", err.Error())
-		return false
-	}
-	key[1675] = 0x0 // key must end with 0x0
 
-	s.tkSigner.LoadData(key)
+	if !s.isRsaKeyLoaded() {
+		err := s.loadKey()
+		if err != nil {
+			le.Printf("Failed to load key from file, %w", err)
+			s.closeNow()
+			return false
+		}
+	}
 
 	// We nowadays disconnect from the TKey when idling, so the
 	// signer-app that's running may have been loade by somebody
@@ -210,8 +199,7 @@ func (s *Signer) isWantedApp() bool {
 		}
 		return false
 	}
-	fmt.Fprintf(os.Stdout, "GetAppNameVersion: %s\n", nameVer.Name0)
-	fmt.Fprintf(os.Stdout, "GetAppNameVersion: %s\n", nameVer.Name1)
+
 	// not caring about nameVer.Version
 	return nameVer.Name0 == wantAppName0 &&
 		nameVer.Name1 == wantAppName1
@@ -244,6 +232,74 @@ func (s *Signer) loadApp() error {
 		return fmt.Errorf("LoadApp: %w", err)
 	}
 	le.Printf("Signer app loaded.\n")
+
+	return nil
+}
+
+func (s *Signer) isRsaKeyLoaded() bool {
+	isLoaded, err := s.tkSigner.GetIsKeyLoaded()
+	if err != nil {
+		if !errors.Is(err, io.EOF) {
+			le.Printf("isRsaKeyLoaded: %s\n", err)
+		}
+		return false
+	}
+
+	return isLoaded
+}
+
+func (s *Signer) loadKey() error {
+	f, err := os.Open(s.rsaKeyPath)
+	if err != nil {
+		notify("Failed to open id_rsa.")
+		le.Printf("Failed to open id_rsa. %s\n", err.Error())
+		s.closeNow()
+		return err
+	}
+	key := make([]byte, 1676)
+	n1, err := f.Read(key)
+	if n1 < 1675 {
+		le.Printf("Did not read enough. Read: %d\n", n1)
+		s.closeNow()
+		return err
+	}
+	if err != nil {
+		le.Printf("failed to read: %w\n", err)
+		return err
+	}
+
+	f.Close()
+
+	block, _ := pem.Decode(key)
+	if block != nil {
+		le.Printf("Read PEM file, encrypting it\n")
+		encrypted_key, err := s.tkSigner.EncryptKey(key)
+		if err != nil {
+			le.Printf("failed to encrypt: %w\n", err)
+			return err
+		}
+		f, err := os.OpenFile(s.rsaKeyPath, os.O_RDWR, 0755)
+		if err != nil {
+			notify("Failed to open id_rsa for write.")
+			le.Printf("Failed to open id_rsa for write. %s\n", err.Error())
+			s.closeNow()
+			return err
+		}
+		n, err := f.Write([]byte(encrypted_key))
+		if n != len(key) {
+			le.Printf("Did not write enough data: %d\n", n)
+		}
+		if err != nil {
+			le.Printf("failed to write: %w\n", err)
+			return err
+		}
+	} else {
+		err = s.tkSigner.LoadEncData(key)
+		if err != nil {
+			le.Printf("failed load keye: %w\n", err)
+			return err
+		}
+	}
 
 	return nil
 }
