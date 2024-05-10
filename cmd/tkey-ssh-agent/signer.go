@@ -163,12 +163,14 @@ func (s *Signer) connect() bool {
 	}
 
 	if !s.isRsaKeyLoaded() {
+		le.Printf("Loading RSA key from file..\n")
 		err := s.loadKey()
 		if err != nil {
 			le.Printf("Failed to load key from file, %w", err)
 			s.closeNow()
 			return false
 		}
+		le.Printf("Done with RSA file..\n")
 	}
 
 	// We nowadays disconnect from the TKey when idling, so the
@@ -293,10 +295,25 @@ func (s *Signer) loadKey() error {
 			le.Printf("failed to write: %w\n", err)
 			return err
 		}
+		err = s.tkSigner.ParseKey()
+		if err != nil {
+			le.Printf("failed to parse key: %w\n", err)
+			return err
+		}
 	} else {
-		err = s.tkSigner.LoadEncData(key)
+		err = s.tkSigner.LoadEncKey(key)
 		if err != nil {
 			le.Printf("failed load keye: %w\n", err)
+			return err
+		}
+		err = s.tkSigner.DecryptKey()
+		if err != nil {
+			le.Printf("failed load keye: %w\n", err)
+			return err
+		}
+		err = s.tkSigner.ParseKey()
+		if err != nil {
+			le.Printf("failed to parse key: %w\n", err)
 			return err
 		}
 	}
