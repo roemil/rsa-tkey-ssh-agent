@@ -9,7 +9,6 @@ import (
 	"crypto/sha512"
 	_ "embed"
 	"encoding/hex"
-	"encoding/pem"
 	"errors"
 	"fmt"
 	"io"
@@ -241,9 +240,7 @@ func (s *Signer) loadApp() error {
 func (s *Signer) isRsaKeyLoaded() bool {
 	isLoaded, err := s.tkSigner.GetIsKeyLoaded()
 	if err != nil {
-		if !errors.Is(err, io.EOF) {
-			le.Printf("isRsaKeyLoaded: %s\n", err)
-		}
+		le.Printf("isRsaKeyLoaded: %s\n", err)
 		return false
 	}
 
@@ -251,72 +248,13 @@ func (s *Signer) isRsaKeyLoaded() bool {
 }
 
 func (s *Signer) loadKey() error {
-	f, err := os.Open(s.rsaKeyPath)
+	le.Printf("Loading key...\n")
+	err := s.tkSigner.LoadKey(s.rsaKeyPath)
 	if err != nil {
-		notify("Failed to open id_rsa.")
-		le.Printf("Failed to open id_rsa. %s\n", err.Error())
-		s.closeNow()
+		le.Printf("LoadKey: %s\n", err)
 		return err
 	}
-	key := make([]byte, 1676)
-	n1, err := f.Read(key)
-	if n1 < 1675 {
-		le.Printf("Did not read enough. Read: %d\n", n1)
-		s.closeNow()
-		return err
-	}
-	if err != nil {
-		le.Printf("failed to read: %w\n", err)
-		return err
-	}
-
-	f.Close()
-
-	block, _ := pem.Decode(key)
-	if block != nil {
-		le.Printf("Read PEM file, encrypting it\n")
-		encrypted_key, err := s.tkSigner.EncryptKey(key)
-		if err != nil {
-			le.Printf("failed to encrypt: %w\n", err)
-			return err
-		}
-		f, err := os.OpenFile(s.rsaKeyPath, os.O_RDWR, 0755)
-		if err != nil {
-			notify("Failed to open id_rsa for write.")
-			le.Printf("Failed to open id_rsa for write. %s\n", err.Error())
-			s.closeNow()
-			return err
-		}
-		n, err := f.Write([]byte(encrypted_key))
-		if n != len(key) {
-			le.Printf("Did not write enough data: %d\n", n)
-		}
-		if err != nil {
-			le.Printf("failed to write: %w\n", err)
-			return err
-		}
-		err = s.tkSigner.ParseKey()
-		if err != nil {
-			le.Printf("failed to parse key: %w\n", err)
-			return err
-		}
-	} else {
-		err = s.tkSigner.LoadEncKey(key)
-		if err != nil {
-			le.Printf("failed load keye: %w\n", err)
-			return err
-		}
-		err = s.tkSigner.DecryptKey()
-		if err != nil {
-			le.Printf("failed load keye: %w\n", err)
-			return err
-		}
-		err = s.tkSigner.ParseKey()
-		if err != nil {
-			le.Printf("failed to parse key: %w\n", err)
-			return err
-		}
-	}
+	le.Printf("Key loaded...\n")
 
 	return nil
 }

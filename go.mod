@@ -6,7 +6,7 @@ require (
 	github.com/Microsoft/go-winio v0.6.1
 	github.com/apenwarr/fixconsole v0.0.0-20191012055117-5a9f6489cc29
 	github.com/getlantern/systray v1.2.1
-	github.com/roemil/tkeysign v0.0.2
+	github.com/roemil/tkeysign v0.0.4
 	github.com/spf13/pflag v1.0.5
 	github.com/tawesoft/golib/v2 v2.9.0
 	github.com/tillitis/tkeyclient v1.0.0
