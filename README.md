@@ -1,9 +1,10 @@
 # RSA SSH AGENT
 This is a proof of concept to use the Tkey SSH Agent with RSA keys. It uses a specific RSA signer, with 2048 bits key and SHA512. It is based on the SSH agent written by Tilltis: https://github.com/tillitis/tkey-ssh-agent
 
-Due to hardware limitations, the tkey will read a private rsa key and load it into the hardware. The signing will be done by Tkey.
+Due to hardware limitations, the tkey will consume a private rsa key, load it, encrypt it and store the encrypted key on the host machione. The encryption and signing will be done by Tkey. 
 
-In the near future the Tkey will consume the private key and store an encrypted key on the host.
+Note: After the RSA key has been consumed, you can no longer retrieve it in unecrypted.
+
 
 For more information, see https://tillitis.se/
 
