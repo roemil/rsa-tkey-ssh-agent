@@ -96,8 +96,7 @@ func (s *SSHAgent) Sign(key ssh.PublicKey, data []byte) (*ssh.Signature, error) 
 	supportedAlgorithms := make([]string, 1)
 	supportedAlgorithms[0] = "rsa-sha2-512"
 	sshSigner, err := ssh.NewSignerWithAlgorithms(s.signer, supportedAlgorithms)
-	print("Algos supported:")
-	println(sshSigner.Algorithms()[0])
+
 	if err != nil {
 		return nil, fmt.Errorf("NewSignerFromSigner: %w", err)
 	}
@@ -125,9 +124,7 @@ func (s *SSHAgent) Sign(key ssh.PublicKey, data []byte) (*ssh.Signature, error) 
 }
 
 func (s *SSHAgent) SignWithFlags(key ssh.PublicKey, data []byte, flags agent.SignatureFlags) (*ssh.Signature, error) {
-	// we only do ed25519, so no need to care about flags
-	le.Println("flags: ")
-	le.Println(flags)
+	// we dont care about flags at the moment
 	return s.Sign(key, data)
 }
 
